@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>Buscador de registros</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      color: #172033;
+      background: #f5f7fb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      padding: 28px 16px;
+      background:
+        radial-gradient(ellipse at 12% 8%, #e8efff 0, transparent 38%),
+        radial-gradient(ellipse at 92% 92%, #e8f7f3 0, transparent 34%),
+        #f5f7fb;
+    }
+
+    .container {
+      width: min(100%, 720px);
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .topbar p {
+      margin: 0;
+      color: #687286;
+      overflow-wrap: anywhere;
+    }
+
+    .card {
+      padding: clamp(24px, 6vw, 40px);
+      border: 1px solid #e8ebf2;
+      border-radius: 20px;
+      background: #fff;
+      box-shadow: 0 20px 60px rgb(34 50 84 / 10%);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(25px, 5vw, 32px);
+      letter-spacing: -0.7px;
+    }
+
+    .intro {
+      margin: 10px 0 28px;
+      color: #687286;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      min-width: 0;
+      height: 48px;
+      padding: 0 13px;
+      border: 1px solid #dce1ea;
+      border-radius: 10px;
+      outline: none;
+      color: #172033;
+      background: #fff;
+      font: inherit;
+      font-size: 14px;
+    }
+
+    input:focus {
+      border-color: #315fe8;
+      box-shadow: 0 0 0 3px rgb(49 95 232 / 13%);
+    }
+
+    .search-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .search-row input {
+      flex: 1;
+    }
+
+    button {
+      min-height: 44px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 10px;
+      color: #fff;
+      background: #315fe8;
+      cursor: pointer;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    button:hover {
+      background: #244ed0;
+    }
+
+    button:focus-visible {
+      outline: 3px solid rgb(49 95 232 / 35%);
+      outline-offset: 3px;
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.7;
+    }
+
+    .search-button {
+      width: 52px;
+      min-width: 52px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+
+    .search-button svg {
+      width: 21px;
+      height: 21px;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-width: 2;
+    }
+
+    .hint,
+    .status {
+      margin: 10px 0 0;
+      color: #687286;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .status:empty {
+      display: none;
+    }
+
+    .status[data-state="error"] {
+      color: #b42318;
+    }
+
+    .status[data-state="success"] {
+      color: #157347;
+    }
+
+    .result,
+    .add-panel {
+      margin-top: 24px;
+      padding: 20px;
+      border: 1px solid #e8ebf2;
+      border-radius: 14px;
+      background: #fbfcff;
+    }
+
+    .result h2,
+    .add-panel h2 {
+      margin: 0 0 15px;
+      font-size: 18px;
+    }
+
+    .result dl {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin: 0;
+    }
+
+    .result dt {
+      color: #687286;
+      font-size: 12px;
+    }
+
+    .result dd {
+      margin: 4px 0 0;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    .add-toggle {
+      width: 100%;
+      margin-top: 20px;
+      color: #315fe8;
+      border: 1px solid #dce1ea;
+      background: #fff;
+    }
+
+    .add-toggle:hover {
+      background: #f8f9fc;
+    }
+
+    .add-panel[hidden],
+    .result[hidden] {
+      display: none;
+    }
+
+    .fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 15px;
+    }
+
+    .field {
+      min-width: 0;
+    }
+
+    .field-number,
+    .add-actions {
+      grid-column: 1 / -1;
+    }
+
+    .add-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .secondary {
+      color: #263248;
+      border: 1px solid #dce1ea;
+      background: #fff;
+    }
+
+    .secondary:hover {
+      background: #f8f9fc;
+    }
+
+    @media (max-width: 520px) {
+      .search-row {
+        gap: 8px;
+      }
+
+      .search-row button {
+        width: 48px;
+        min-width: 48px;
+      }
+
+      .fields,
+      .result dl {
+        grid-template-columns: 1fr;
+      }
+
+      .field-number,
+      .add-actions {
+        grid-column: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" hidden>
+    <header class="topbar">
+      <p id="welcome-message"></p>
+      <button class="secondary" id="logout" type="button">Cerrar sesión</button>
+    </header>
+
+    <main class="card">
+      <h1>Buscador de registros</h1>
+      <p class="intro">Busca los nombres asociados a un número de 10 dígitos que comience por 006 o 002.</p>
+
+      <form id="search-form">
+        <label for="search-number">Número</label>
+        <div class="search-row">
+          <input id="search-number" name="numero" type="text" inputmode="numeric" autocomplete="off" maxlength="10" pattern="(006|002)[0-9]{7}" placeholder="Ej.: 0061234567" aria-describedby="number-hint" required>
+          <button class="search-button" id="search-button" type="submit" aria-label="Buscar">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="10.8" cy="10.8" r="6.8"></circle>
+              <path d="m16 16 4.5 4.5"></path>
+            </svg>
+          </button>
+        </div>
+        <p class="hint" id="number-hint">Escribe 10 dígitos: 006 seguido de 7 dígitos, o 002 seguido de 7 dígitos.</p>
+        <p class="status" id="search-status" role="status" aria-live="polite"></p>
+      </form>
+
+      <section class="result" id="search-result" aria-live="polite" hidden>
+        <h2>Datos encontrados</h2>
+        <dl>
+          <div><dt>Número</dt><dd id="result-number"></dd></div>
+          <div><dt>Primer nombre</dt><dd id="result-first-name"></dd></div>
+          <div><dt>Segundo nombre</dt><dd id="result-second-name"></dd></div>
+          <div><dt>Primer apellido</dt><dd id="result-first-surname"></dd></div>
+          <div><dt>Segundo apellido</dt><dd id="result-second-surname"></dd></div>
+        </dl>
+      </section>
+
+      <button class="add-toggle" id="show-add-form" type="button" aria-expanded="false" aria-controls="add-panel">Agregar nombres</button>
+
+      <section class="add-panel" id="add-panel" hidden>
+        <h2>Agregar un registro</h2>
+        <form id="add-form">
+          <div class="fields">
+            <div class="field field-number">
+              <label for="add-number">Número</label>
+              <input id="add-number" name="numero" type="text" inputmode="numeric" autocomplete="off" maxlength="10" pattern="(006|002)[0-9]{7}" placeholder="0061234567" required>
+            </div>
+            <div class="field">
+              <label for="first-name">Primer nombre</label>
+              <input id="first-name" name="primer_nombre" type="text" maxlength="100" autocomplete="given-name" required>
+            </div>
+            <div class="field">
+              <label for="second-name">Segundo nombre</label>
+              <input id="second-name" name="segundo_nombre" type="text" maxlength="100" required>
+            </div>
+            <div class="field">
+              <label for="first-surname">Primer apellido</label>
+              <input id="first-surname" name="primer_apellido" type="text" maxlength="100" autocomplete="family-name" required>
+            </div>
+            <div class="field">
+              <label for="second-surname">Segundo apellido</label>
+              <input id="second-surname" name="segundo_apellido" type="text" maxlength="100" required>
+            </div>
+            <div class="add-actions">
+              <button id="save-button" type="submit">Guardar registro</button>
+              <button class="secondary" id="cancel-add" type="button">Cancelar</button>
+            </div>
+          </div>
+          <p class="status" id="add-status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const username = sessionStorage.getItem("login-demo-username");
+    const page = document.querySelector(".container");
+    const searchForm = document.querySelector("#search-form");
+    const searchNumber = document.querySelector("#search-number");
+    const searchButton = document.querySelector("#search-button");
+    const searchStatus = document.querySelector("#search-status");
+    const searchResult = document.querySelector("#search-result");
+    const addToggle = document.querySelector("#show-add-form");
+    const addPanel = document.querySelector("#add-panel");
+    const addForm = document.querySelector("#add-form");
+    const addNumber = document.querySelector("#add-number");
+    const saveButton = document.querySelector("#save-button");
+    const addStatus = document.querySelector("#add-status");
+
+    if (!username) {
+      window.location.replace("login.html");
+    } else {
+      document.querySelector("#welcome-message").textContent = `Sesión iniciada como ${username}`;
+      page.hidden = false;
+    }
+
+    function setStatus(element, text, state = "") {
+      element.textContent = text;
+      element.dataset.state = state;
+    }
+
+    function showRecord(record) {
+      document.querySelector("#result-number").textContent = record.numero;
+      document.querySelector("#result-first-name").textContent = record.primer_nombre;
+      document.querySelector("#result-second-name").textContent = record.segundo_nombre;
+      document.querySelector("#result-first-surname").textContent = record.primer_apellido;
+      document.querySelector("#result-second-surname").textContent = record.segundo_apellido;
+      searchResult.hidden = false;
+    }
+
+    async function readResponse(response) {
+      const body = await response.json();
+      if (!response.ok) {
+        throw new Error(body.error || "No se pudo completar la solicitud.");
+      }
+      return body;
+    }
+
+    searchForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!searchForm.reportValidity()) return;
+
+      searchButton.disabled = true;
+      searchResult.hidden = true;
+      setStatus(searchStatus, "Buscando...");
+      try {
+        const response = await fetch(`api.php?numero=${encodeURIComponent(searchNumber.value.trim())}`, {
+          headers: { Accept: "application/json" }
+        });
+        const result = await readResponse(response);
+        if (!result.found) {
+          setStatus(searchStatus, "No se encontró un registro con ese número.");
+          return;
+        }
+        showRecord(result.record);
+        setStatus(searchStatus, "Registro encontrado.", "success");
+      } catch (error) {
+        setStatus(searchStatus, error.message === "Failed to fetch"
+          ? "No se pudo conectar con el servidor. Inicia la aplicación mediante PHP y vuelve a intentarlo."
+          : error.message, "error");
+      } finally {
+        searchButton.disabled = false;
+      }
+    });
+
+    addToggle.addEventListener("click", () => {
+      const isOpening = addPanel.hidden;
+      addPanel.hidden = !isOpening;
+      addToggle.setAttribute("aria-expanded", String(isOpening));
+      if (isOpening) {
+        addNumber.value = searchNumber.value.trim();
+        addNumber.focus();
+      }
+    });
+
+    document.querySelector("#cancel-add").addEventListener("click", () => {
+      addPanel.hidden = true;
+      addToggle.setAttribute("aria-expanded", "false");
+      addForm.reset();
+      setStatus(addStatus, "");
+      addToggle.focus();
+    });
+
+    addForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!addForm.reportValidity()) return;
+
+      const formData = new FormData(addForm);
+      const record = Object.fromEntries(formData.entries());
+      for (const field of ["primer_nombre", "segundo_nombre", "primer_apellido", "segundo_apellido"]) {
+        record[field] = record[field].trim();
+      }
+
+      saveButton.disabled = true;
+      setStatus(addStatus, "Guardando...");
+      try {
+        const response = await fetch("api.php", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(record)
+        });
+        const result = await readResponse(response);
+        addForm.reset();
+        searchNumber.value = result.record.numero;
+        showRecord(result.record);
+        setStatus(addStatus, "Registro guardado correctamente.", "success");
+        setStatus(searchStatus, "Registro encontrado.", "success");
+      } catch (error) {
+        setStatus(addStatus, error.message === "Failed to fetch"
+          ? "No se pudo conectar con el servidor. Inicia la aplicación mediante PHP y vuelve a intentarlo."
+          : error.message, "error");
+      } finally {
+        saveButton.disabled = false;
+      }
+    });
+
+    document.querySelector("#logout").addEventListener("click", () => {
+      sessionStorage.removeItem("login-demo-username");
+      window.location.replace("login.html");
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>Iniciar sesión</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      color: #172033;
+      background: #f5f7fb;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 28px 16px;
+      background:
+        radial-gradient(ellipse at 12% 8%, #e8efff 0, transparent 38%),
+        radial-gradient(ellipse at 92% 92%, #e8f7f3 0, transparent 34%),
+        #f5f7fb;
+    }
+
+    .card {
+      width: min(100%, 430px);
+      padding: 40px;
+      border: 1px solid #e8ebf2;
+      border-radius: 20px;
+      background: #fff;
+      box-shadow: 0 20px 60px rgb(34 50 84 / 10%);
+    }
+
+    .login-flag {
+      width: calc(100% + 80px);
+      height: auto;
+      display: block;
+      margin: -40px -40px 30px;
+      border-radius: 20px 20px 0 0;
+    }
+
+    .brand {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 28px;
+      border-radius: 15px;
+      color: #fff;
+      background: #315fe8;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.7px;
+    }
+
+    .intro {
+      margin: 9px 0 28px;
+      color: #687286;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .demo-note {
+      margin: 0 0 22px;
+      padding: 11px 13px;
+      border: 1px solid #e5ebff;
+      border-radius: 10px;
+      color: #43577f;
+      background: #f6f8ff;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .field {
+      margin-bottom: 17px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      height: 48px;
+      padding: 0 13px;
+      border: 1px solid #dce1ea;
+      border-radius: 10px;
+      outline: none;
+      color: #172033;
+      background: #fff;
+      font: inherit;
+      font-size: 14px;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    input::placeholder {
+      color: #9aa3b3;
+    }
+
+    input:focus {
+      border-color: #315fe8;
+      box-shadow: 0 0 0 3px rgb(49 95 232 / 13%);
+    }
+
+    .password-wrap {
+      position: relative;
+    }
+
+    .password-wrap input {
+      padding-right: 76px;
+    }
+
+    .toggle-password {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      padding: 5px 0;
+      transform: translateY(-50%);
+      border: 0;
+      color: #315fe8;
+      background: transparent;
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .primary,
+    .google-button {
+      width: 100%;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background-color 150ms ease, transform 150ms ease;
+    }
+
+    .primary {
+      margin-top: 7px;
+      border: 0;
+      color: #fff;
+      background: #315fe8;
+    }
+
+    .primary:hover {
+      background: #244ed0;
+    }
+
+    .google-button {
+      border: 1px solid #dce1ea;
+      color: #263248;
+      background: #fff;
+    }
+
+    .google-button:hover {
+      background: #f8f9fc;
+    }
+
+    .primary:active,
+    .google-button:active {
+      transform: translateY(1px);
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 23px 0;
+      color: #929bad;
+      font-size: 12px;
+    }
+
+    .divider::before,
+    .divider::after {
+      height: 1px;
+      flex: 1;
+      background: #e8ebf2;
+      content: "";
+    }
+
+    .google-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .message {
+      min-height: 20px;
+      margin: 13px 0 0;
+      color: #b42318;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .message:empty {
+      min-height: 0;
+      margin-top: 0;
+    }
+
+    .footer {
+      margin: 26px 0 0;
+      color: #8a93a3;
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    @media (max-width: 480px) {
+      .card {
+        padding: 30px 24px;
+        border-radius: 16px;
+      }
+
+      .login-flag {
+        width: calc(100% + 48px);
+        margin: -30px -24px 26px;
+        border-radius: 16px 16px 0 0;
+      }
+
+      h1 {
+        font-size: 25px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <img class="login-flag" src="peru-flag.png" alt="Bandera del Perú">
+    <div class="brand" aria-hidden="true">L</div>
+    <h1>Bienvenido</h1>
+    <p class="intro">Inicia sesión con tu usuario y contraseña para continuar.</p>
+    <p class="demo-note">Demostración: este formulario no verifica credenciales en un servidor. Para un acceso real, conecta un servicio de autenticación.</p>
+
+    <form id="login-form">
+      <div class="field">
+        <label for="username">Usuario</label>
+        <input id="username" name="username" type="text" placeholder="Tu nombre de usuario" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="password">Contraseña</label>
+        <div class="password-wrap">
+          <input id="password" name="password" type="password" placeholder="Tu contraseña" autocomplete="current-password" required>
+          <button class="toggle-password" id="toggle-password" type="button" aria-controls="password" aria-label="Mostrar contraseña">Mostrar</button>
+        </div>
+      </div>
+      <button class="primary" type="submit">Iniciar sesión</button>
+      <p class="message" id="message" role="status" aria-live="polite"></p>
+    </form>
+
+    <div class="divider" aria-hidden="true">o continúa con</div>
+    <button class="google-button" id="google-button" type="button">
+      <svg class="google-icon" viewBox="0 0 48 48" aria-hidden="true">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z" transform="translate(0 6)"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.27 5.48-4.78 7.18l7.73 6C44.4 37.9 47 31.7 47 24.55Z" transform="translate(0 -5)"/>
+        <path fill="#FBBC05" d="M10.53 28.59a14.4 14.4 0 0 1 0-9.18l-7.98-6.19a23.9 23.9 0 0 0 0 21.56l7.98-6.19Z" transform="translate(0 -4)"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.9-5.8l-7.73-6c-2.14 1.44-4.89 2.3-8.17 2.3-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48Z" transform="translate(0 -7)"/>
+      </svg>
+      Iniciar con Google
+    </button>
+    <p class="footer">El acceso con Google requiere configurar OAuth con un proveedor de identidad.</p>
+  </main>
+
+  <script>
+    const form = document.querySelector("#login-form");
+    const usernameInput = document.querySelector("#username");
+    const passwordInput = document.querySelector("#password");
+    const message = document.querySelector("#message");
+    const togglePassword = document.querySelector("#toggle-password");
+    const googleButton = document.querySelector("#google-button");
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const username = usernameInput.value.trim();
+
+      if (!username || !passwordInput.value) {
+        message.textContent = "Escribe tu usuario y contraseña para continuar.";
+        return;
+      }
+
+      sessionStorage.setItem("login-demo-username", username);
+      window.location.href = "bienvenida.html";
+    });
+
+    togglePassword.addEventListener("click", () => {
+      const isPasswordHidden = passwordInput.type === "password";
+      passwordInput.type = isPasswordHidden ? "text" : "password";
+      togglePassword.textContent = isPasswordHidden ? "Ocultar" : "Mostrar";
+      togglePassword.setAttribute("aria-label", isPasswordHidden ? "Ocultar contraseña" : "Mostrar contraseña");
+    });
+
+    googleButton.addEventListener("click", () => {
+      message.textContent = "Para iniciar con Google, primero se debe configurar la autenticación OAuth.";
+      message.style.color = "#43577f";
+    });
+  </script>
+</body>
+</html>
