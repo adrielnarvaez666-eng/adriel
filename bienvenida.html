@@ -168,7 +168,8 @@
     }
 
     .result,
-    .add-panel {
+    .add-panel,
+    .json-output {
       margin-top: 24px;
       padding: 20px;
       border: 1px solid #e8ebf2;
@@ -177,9 +178,23 @@
     }
 
     .result h2,
-    .add-panel h2 {
+    .add-panel h2,
+    .json-output h2 {
       margin: 0 0 15px;
       font-size: 18px;
+    }
+
+    .json-output pre {
+      max-height: 320px;
+      overflow: auto;
+      margin: 0 0 15px;
+      padding: 14px;
+      border-radius: 10px;
+      color: #e8edf7;
+      background: #172033;
+      font: 13px/1.5 Consolas, "Courier New", monospace;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
     }
 
     .result dl {
@@ -213,7 +228,8 @@
     }
 
     .add-panel[hidden],
-    .result[hidden] {
+    .result[hidden],
+    .json-output[hidden] {
       display: none;
     }
 
@@ -246,6 +262,33 @@
 
     .secondary:hover {
       background: #f8f9fc;
+    }
+
+    .whatsapp-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 10px;
+      color: #fff;
+      background: #157347;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .whatsapp-link:hover {
+      background: #105c39;
+    }
+
+    .whatsapp-link:focus-visible {
+      outline: 3px solid rgb(21 115 71 / 35%);
+      outline-offset: 3px;
+    }
+
+    .whatsapp-link[hidden],
+    #whatsapp-note[hidden] {
+      display: none;
     }
 
     @media (max-width: 520px) {
@@ -307,6 +350,12 @@
         </dl>
       </section>
 
+      <section class="json-output" id="json-response" aria-live="polite" hidden>
+        <h2>Respuesta JSON</h2>
+        <pre><code id="json-content"></code></pre>
+        <a class="whatsapp-link" id="download-json" download hidden>Descargar respuesta .json</a>
+      </section>
+
       <button class="add-toggle" id="show-add-form" type="button" aria-expanded="false" aria-controls="add-panel">Agregar nombres</button>
 
       <section class="add-panel" id="add-panel" hidden>
@@ -339,6 +388,8 @@
             </div>
           </div>
           <p class="status" id="add-status" role="status" aria-live="polite"></p>
+          <p class="hint" id="whatsapp-note" hidden>El mensaje incluye el nombre y el número de identidad. Revisa los datos en WhatsApp y pulsa «Enviar»; no se envía automáticamente.</p>
+          <a class="whatsapp-link" id="whatsapp-link" target="_blank" rel="noopener noreferrer" hidden>Preparar mensaje en WhatsApp</a>
         </form>
       </section>
     </main>
@@ -352,12 +403,19 @@
     const searchButton = document.querySelector("#search-button");
     const searchStatus = document.querySelector("#search-status");
     const searchResult = document.querySelector("#search-result");
+    const jsonResponse = document.querySelector("#json-response");
+    const jsonContent = document.querySelector("#json-content");
+    const downloadJson = document.querySelector("#download-json");
     const addToggle = document.querySelector("#show-add-form");
     const addPanel = document.querySelector("#add-panel");
     const addForm = document.querySelector("#add-form");
     const addNumber = document.querySelector("#add-number");
     const saveButton = document.querySelector("#save-button");
     const addStatus = document.querySelector("#add-status");
+    const whatsappNote = document.querySelector("#whatsapp-note");
+    const whatsappLink = document.querySelector("#whatsapp-link");
+    const whatsappRecipient = "593969758015";
+    let jsonDownloadUrl = null;
 
     if (!username) {
       window.location.replace("login.html");
@@ -371,6 +429,27 @@
       element.dataset.state = state;
     }
 
+    function clearJsonResponse() {
+      jsonResponse.hidden = true;
+      downloadJson.hidden = true;
+      downloadJson.removeAttribute("href");
+      jsonContent.textContent = "";
+      if (jsonDownloadUrl !== null) {
+        URL.revokeObjectURL(jsonDownloadUrl);
+        jsonDownloadUrl = null;
+      }
+    }
+
+    function showJsonResponse(result, number) {
+      const json = `${JSON.stringify(result, null, 2)}\n`;
+      jsonContent.textContent = json;
+      jsonDownloadUrl = URL.createObjectURL(new Blob([json], { type: "application/json;charset=utf-8" }));
+      downloadJson.href = jsonDownloadUrl;
+      downloadJson.download = `consulta-${number}.json`;
+      downloadJson.hidden = false;
+      jsonResponse.hidden = false;
+    }
+
     function showRecord(record) {
       document.querySelector("#result-number").textContent = record.numero;
       document.querySelector("#result-first-name").textContent = record.primer_nombre;
@@ -380,12 +459,46 @@
       searchResult.hidden = false;
     }
 
+    function isRecord(record) {
+      return record !== null
+        && typeof record === "object"
+        && !Array.isArray(record)
+        && typeof record.numero === "string"
+        && /^(006|002)[0-9]{7}$/.test(record.numero)
+        && ["primer_nombre", "segundo_nombre", "primer_apellido", "segundo_apellido"]
+          .every((field) => typeof record[field] === "string");
+    }
+
     async function readResponse(response) {
-      const body = await response.json();
+      let body;
+      try {
+        body = await response.json();
+      } catch {
+        throw new Error(`El servidor devolvió una respuesta JSON inválida (HTTP ${response.status}).`);
+      }
+
+      if (body === null || typeof body !== "object" || Array.isArray(body)) {
+        throw new Error("El servidor devolvió un JSON con formato inesperado.");
+      }
       if (!response.ok) {
-        throw new Error(body.error || "No se pudo completar la solicitud.");
+        throw new Error(typeof body.error === "string"
+          ? body.error
+          : `No se pudo completar la solicitud (HTTP ${response.status}).`);
       }
       return body;
+    }
+
+    function requestErrorMessage(error) {
+      if (error instanceof TypeError) {
+        return "No se pudo conectar con el servidor. Inicia la aplicación mediante PHP y vuelve a intentarlo.";
+      }
+      return error instanceof Error ? error.message : "Ocurrió un error inesperado.";
+    }
+
+    function hideWhatsAppLink() {
+      whatsappLink.hidden = true;
+      whatsappNote.hidden = true;
+      whatsappLink.removeAttribute("href");
     }
 
     searchForm.addEventListener("submit", async (event) => {
@@ -394,12 +507,20 @@
 
       searchButton.disabled = true;
       searchResult.hidden = true;
+      clearJsonResponse();
       setStatus(searchStatus, "Buscando...");
       try {
-        const response = await fetch(`api.php?numero=${encodeURIComponent(searchNumber.value.trim())}`, {
+        const number = searchNumber.value.trim();
+        const response = await fetch(`api.php?numero=${encodeURIComponent(number)}`, {
           headers: { Accept: "application/json" }
         });
         const result = await readResponse(response);
+        if (typeof result.found !== "boolean"
+          || (result.found && !isRecord(result.record))
+          || (!result.found && result.record !== null)) {
+          throw new Error("El servidor devolvió un resultado de búsqueda con formato inesperado.");
+        }
+        showJsonResponse(result, number);
         if (!result.found) {
           setStatus(searchStatus, "No se encontró un registro con ese número.");
           return;
@@ -407,9 +528,8 @@
         showRecord(result.record);
         setStatus(searchStatus, "Registro encontrado.", "success");
       } catch (error) {
-        setStatus(searchStatus, error.message === "Failed to fetch"
-          ? "No se pudo conectar con el servidor. Inicia la aplicación mediante PHP y vuelve a intentarlo."
-          : error.message, "error");
+        clearJsonResponse();
+        setStatus(searchStatus, requestErrorMessage(error), "error");
       } finally {
         searchButton.disabled = false;
       }
@@ -420,6 +540,7 @@
       addPanel.hidden = !isOpening;
       addToggle.setAttribute("aria-expanded", String(isOpening));
       if (isOpening) {
+        hideWhatsAppLink();
         addNumber.value = searchNumber.value.trim();
         addNumber.focus();
       }
@@ -429,6 +550,7 @@
       addPanel.hidden = true;
       addToggle.setAttribute("aria-expanded", "false");
       addForm.reset();
+      hideWhatsAppLink();
       setStatus(addStatus, "");
       addToggle.focus();
     });
@@ -443,6 +565,7 @@
         record[field] = record[field].trim();
       }
 
+      hideWhatsAppLink();
       saveButton.disabled = true;
       setStatus(addStatus, "Guardando...");
       try {
@@ -455,15 +578,24 @@
           body: JSON.stringify(record)
         });
         const result = await readResponse(response);
+        if (result.saved !== true || result.database !== "saved" || !isRecord(result.record)) {
+          throw new Error("El servidor no confirmó el guardado del registro.");
+        }
         addForm.reset();
         searchNumber.value = result.record.numero;
         showRecord(result.record);
-        setStatus(addStatus, "Registro guardado correctamente.", "success");
+        const message = [
+          "Se agregó un nuevo registro:",
+          `Número de identidad: ${result.record.numero}`,
+          `Nombre completo: ${result.record.primer_nombre} ${result.record.segundo_nombre} ${result.record.primer_apellido} ${result.record.segundo_apellido}`
+        ].join("\n");
+        whatsappLink.href = `https://wa.me/${whatsappRecipient}?text=${encodeURIComponent(message)}`;
+        whatsappNote.hidden = false;
+        whatsappLink.hidden = false;
+        setStatus(addStatus, "Registro guardado correctamente en el servidor y la base de datos.", "success");
         setStatus(searchStatus, "Registro encontrado.", "success");
       } catch (error) {
-        setStatus(addStatus, error.message === "Failed to fetch"
-          ? "No se pudo conectar con el servidor. Inicia la aplicación mediante PHP y vuelve a intentarlo."
-          : error.message, "error");
+        setStatus(addStatus, requestErrorMessage(error), "error");
       } finally {
         saveButton.disabled = false;
       }

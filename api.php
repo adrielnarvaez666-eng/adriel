@@ -44,7 +44,18 @@ function database(): PDO
 $method = $_SERVER['REQUEST_METHOD'] ?? '';
 if ($method === 'GET') {
     if (!isset($_GET['numero'])) {
-        respond(200, ['status' => 'ok']);
+        try {
+            database()->query('SELECT numero FROM registros LIMIT 0');
+        } catch (PDOException $error) {
+            error_log('Database health check failed: ' . $error->getMessage());
+            respond(503, [
+                'status' => 'error',
+                'database' => 'unavailable',
+                'error' => 'No se pudo conectar con la base de datos.',
+            ]);
+        }
+
+        respond(200, ['status' => 'ok', 'database' => 'connected']);
     }
 
     $number = $_GET['numero'];
@@ -70,16 +81,16 @@ if ($method === 'GET') {
 if ($method === 'POST') {
     $rawBody = file_get_contents('php://input');
     try {
-        $data = json_decode($rawBody, true, 512, JSON_THROW_ON_ERROR);
+        $data = json_decode($rawBody, false, 512, JSON_THROW_ON_ERROR);
     } catch (JsonException $error) {
         respond(400, ['error' => 'El contenido enviado no es JSON válido.']);
     }
 
-    if (!is_array($data)) {
+    if (!($data instanceof stdClass)) {
         respond(400, ['error' => 'Envía un objeto JSON con el número y los cuatro nombres.']);
     }
 
-    $number = $data['numero'] ?? null;
+    $number = $data->numero ?? null;
     if (!validNumber($number)) {
         respond(422, ['error' => 'El número debe tener 10 dígitos y comenzar por 006 o 002.']);
     }
@@ -87,7 +98,7 @@ if ($method === 'POST') {
     $fields = ['primer_nombre', 'segundo_nombre', 'primer_apellido', 'segundo_apellido'];
     $record = ['numero' => $number];
     foreach ($fields as $field) {
-        $value = $data[$field] ?? null;
+        $value = $data->{$field} ?? null;
         if (!is_string($value)) {
             respond(422, ['error' => 'Completa los dos nombres y los dos apellidos.']);
         }
@@ -115,7 +126,7 @@ if ($method === 'POST') {
         respond(503, ['error' => 'No se pudo guardar en la base de datos. Verifica la configuración del servidor.']);
     }
 
-    respond(201, ['saved' => true, 'record' => $record]);
+    respond(201, ['saved' => true, 'database' => 'saved', 'record' => $record]);
 }
 
 header('Allow: GET, POST');
