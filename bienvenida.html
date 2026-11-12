@@ -264,6 +264,10 @@
       background: #f8f9fc;
     }
 
+    .export-actions {
+      margin: 20px 0;
+    }
+
     .whatsapp-link {
       display: inline-flex;
       align-items: center;
@@ -322,7 +326,12 @@
 
     <main class="card">
       <h1>Buscador de registros</h1>
-      <p class="intro">Busca los nombres asociados a un número de 10 dígitos que comience por 006 o 002.</p>
+      <p class="intro">Busca los datos asociados a un número de 10 dígitos que comience por 006 o 002.</p>
+
+      <div class="export-actions">
+        <button class="secondary" id="export-button" type="button">Descargar Excel</button>
+        <p class="status" id="export-status" role="status" aria-live="polite"></p>
+      </div>
 
       <form id="search-form">
         <label for="search-number">Número</label>
@@ -347,6 +356,14 @@
           <div><dt>Segundo nombre</dt><dd id="result-second-name"></dd></div>
           <div><dt>Primer apellido</dt><dd id="result-first-surname"></dd></div>
           <div><dt>Segundo apellido</dt><dd id="result-second-surname"></dd></div>
+          <div><dt>Madre: primer nombre</dt><dd id="result-mother-first-name"></dd></div>
+          <div><dt>Madre: segundo nombre</dt><dd id="result-mother-second-name"></dd></div>
+          <div><dt>Madre: primer apellido</dt><dd id="result-mother-first-surname"></dd></div>
+          <div><dt>Madre: segundo apellido</dt><dd id="result-mother-second-surname"></dd></div>
+          <div><dt>Padre: primer nombre</dt><dd id="result-father-first-name"></dd></div>
+          <div><dt>Padre: segundo nombre</dt><dd id="result-father-second-name"></dd></div>
+          <div><dt>Padre: primer apellido</dt><dd id="result-father-first-surname"></dd></div>
+          <div><dt>Padre: segundo apellido</dt><dd id="result-father-second-surname"></dd></div>
         </dl>
       </section>
 
@@ -382,6 +399,38 @@
               <label for="second-surname">Segundo apellido</label>
               <input id="second-surname" name="segundo_apellido" type="text" maxlength="100" required>
             </div>
+            <div class="field">
+              <label for="mother-first-name">Nombre de la madre</label>
+              <input id="mother-first-name" name="madre_primer_nombre" type="text" maxlength="100" required>
+            </div>
+            <div class="field">
+              <label for="mother-second-name">Segundo nombre de la madre</label>
+              <input id="mother-second-name" name="madre_segundo_nombre" type="text" maxlength="100" required>
+            </div>
+            <div class="field">
+              <label for="mother-first-surname">Primer apellido de la madre</label>
+              <input id="mother-first-surname" name="madre_primer_apellido" type="text" maxlength="100" required>
+            </div>
+            <div class="field">
+              <label for="mother-second-surname">Segundo apellido de la madre</label>
+              <input id="mother-second-surname" name="madre_segundo_apellido" type="text" maxlength="100" required>
+            </div>
+            <div class="field">
+              <label for="father-first-name">Nombre del padre</label>
+              <input id="father-first-name" name="padre_primer_nombre" type="text" maxlength="100" required>
+            </div>
+            <div class="field">
+              <label for="father-second-name">Segundo nombre del padre</label>
+              <input id="father-second-name" name="padre_segundo_nombre" type="text" maxlength="100" required>
+            </div>
+            <div class="field">
+              <label for="father-first-surname">Primer apellido del padre</label>
+              <input id="father-first-surname" name="padre_primer_apellido" type="text" maxlength="100" required>
+            </div>
+            <div class="field">
+              <label for="father-second-surname">Segundo apellido del padre</label>
+              <input id="father-second-surname" name="padre_segundo_apellido" type="text" maxlength="100" required>
+            </div>
             <div class="add-actions">
               <button id="save-button" type="submit">Guardar registro</button>
               <button class="secondary" id="cancel-add" type="button">Cancelar</button>
@@ -402,6 +451,8 @@
     const searchNumber = document.querySelector("#search-number");
     const searchButton = document.querySelector("#search-button");
     const searchStatus = document.querySelector("#search-status");
+    const exportButton = document.querySelector("#export-button");
+    const exportStatus = document.querySelector("#export-status");
     const searchResult = document.querySelector("#search-result");
     const jsonResponse = document.querySelector("#json-response");
     const jsonContent = document.querySelector("#json-content");
@@ -456,6 +507,14 @@
       document.querySelector("#result-second-name").textContent = record.segundo_nombre;
       document.querySelector("#result-first-surname").textContent = record.primer_apellido;
       document.querySelector("#result-second-surname").textContent = record.segundo_apellido;
+      document.querySelector("#result-mother-first-name").textContent = record.madre_primer_nombre;
+      document.querySelector("#result-mother-second-name").textContent = record.madre_segundo_nombre;
+      document.querySelector("#result-mother-first-surname").textContent = record.madre_primer_apellido;
+      document.querySelector("#result-mother-second-surname").textContent = record.madre_segundo_apellido;
+      document.querySelector("#result-father-first-name").textContent = record.padre_primer_nombre;
+      document.querySelector("#result-father-second-name").textContent = record.padre_segundo_nombre;
+      document.querySelector("#result-father-first-surname").textContent = record.padre_primer_apellido;
+      document.querySelector("#result-father-second-surname").textContent = record.padre_segundo_apellido;
       searchResult.hidden = false;
     }
 
@@ -465,7 +524,11 @@
         && !Array.isArray(record)
         && typeof record.numero === "string"
         && /^(006|002)[0-9]{7}$/.test(record.numero)
-        && ["primer_nombre", "segundo_nombre", "primer_apellido", "segundo_apellido"]
+        && [
+          "primer_nombre", "segundo_nombre", "primer_apellido", "segundo_apellido",
+          "madre_primer_nombre", "madre_segundo_nombre", "madre_primer_apellido", "madre_segundo_apellido",
+          "padre_primer_nombre", "padre_segundo_nombre", "padre_primer_apellido", "padre_segundo_apellido"
+        ]
           .every((field) => typeof record[field] === "string");
     }
 
@@ -500,6 +563,40 @@
       whatsappNote.hidden = true;
       whatsappLink.removeAttribute("href");
     }
+
+    exportButton.addEventListener("click", async () => {
+      exportButton.disabled = true;
+      setStatus(exportStatus, "Preparando archivo Excel...");
+      try {
+        const response = await fetch("api.php?export=excel", {
+          headers: { Accept: "application/vnd.ms-excel" }
+        });
+        if (!response.ok) {
+          await readResponse(response);
+          throw new Error("No se pudo descargar el archivo Excel.");
+        }
+
+        const contentType = response.headers.get("Content-Type") || "";
+        if (!contentType.includes("application/vnd.ms-excel")) {
+          throw new Error("El servidor devolvió un archivo con formato inesperado.");
+        }
+
+        const blob = await response.blob();
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = "registros.xls";
+        document.body.append(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+        setStatus(exportStatus, "Descarga de registros completada.", "success");
+      } catch (error) {
+        setStatus(exportStatus, requestErrorMessage(error), "error");
+      } finally {
+        exportButton.disabled = false;
+      }
+    });
 
     searchForm.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -561,7 +658,11 @@
 
       const formData = new FormData(addForm);
       const record = Object.fromEntries(formData.entries());
-      for (const field of ["primer_nombre", "segundo_nombre", "primer_apellido", "segundo_apellido"]) {
+      for (const field of [
+        "primer_nombre", "segundo_nombre", "primer_apellido", "segundo_apellido",
+        "madre_primer_nombre", "madre_segundo_nombre", "madre_primer_apellido", "madre_segundo_apellido",
+        "padre_primer_nombre", "padre_segundo_nombre", "padre_primer_apellido", "padre_segundo_apellido"
+      ]) {
         record[field] = record[field].trim();
       }
 

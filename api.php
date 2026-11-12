@@ -17,6 +17,24 @@ function validNumber($number): bool
     return is_string($number) && preg_match('/\A(?:006|002)[0-9]{7}\z/', $number) === 1;
 }
 
+function recordFields(): array
+{
+    return [
+        'primer_nombre',
+        'segundo_nombre',
+        'primer_apellido',
+        'segundo_apellido',
+        'madre_primer_nombre',
+        'madre_segundo_nombre',
+        'madre_primer_apellido',
+        'madre_segundo_apellido',
+        'padre_primer_nombre',
+        'padre_segundo_nombre',
+        'padre_primer_apellido',
+        'padre_segundo_apellido',
+    ];
+}
+
 function database(): PDO
 {
     $user = getenv('DB_USER');
@@ -41,8 +59,77 @@ function database(): PDO
     );
 }
 
+function exportRecords(): void
+{
+    try {
+        $records = database()->query(
+            'SELECT numero, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
+                    madre_primer_nombre, madre_segundo_nombre, madre_primer_apellido, madre_segundo_apellido,
+                    padre_primer_nombre, padre_segundo_nombre, padre_primer_apellido, padre_segundo_apellido,
+                    creado_en
+             FROM registros
+             ORDER BY creado_en, numero'
+        )->fetchAll();
+    } catch (PDOException $error) {
+        error_log('Database export failed: ' . $error->getMessage());
+        respond(503, ['error' => 'No se pudieron exportar los registros. Verifica la configuración de la base de datos.']);
+    }
+
+    $columns = [
+        'numero' => 'Número',
+        'primer_nombre' => 'Primer nombre',
+        'segundo_nombre' => 'Segundo nombre',
+        'primer_apellido' => 'Primer apellido',
+        'segundo_apellido' => 'Segundo apellido',
+        'madre_primer_nombre' => 'Madre: primer nombre',
+        'madre_segundo_nombre' => 'Madre: segundo nombre',
+        'madre_primer_apellido' => 'Madre: primer apellido',
+        'madre_segundo_apellido' => 'Madre: segundo apellido',
+        'padre_primer_nombre' => 'Padre: primer nombre',
+        'padre_segundo_nombre' => 'Padre: segundo nombre',
+        'padre_primer_apellido' => 'Padre: primer apellido',
+        'padre_segundo_apellido' => 'Padre: segundo apellido',
+        'creado_en' => 'Fecha de creación',
+    ];
+
+    header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+    header('Content-Disposition: attachment; filename="registros.xls"');
+
+    echo '<?xml version="1.0" encoding="UTF-8"?>';
+    echo '<?mso-application progid="Excel.Sheet"?>';
+    echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"'
+        . ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">'
+        . '<Worksheet ss:Name="Registros"><Table><Row>';
+
+    foreach ($columns as $label) {
+        echo '<Cell><Data ss:Type="String">'
+            . htmlspecialchars($label, ENT_XML1 | ENT_QUOTES, 'UTF-8')
+            . '</Data></Cell>';
+    }
+
+    echo '</Row>';
+    foreach ($records as $record) {
+        echo '<Row>';
+        foreach (array_keys($columns) as $field) {
+            echo '<Cell><Data ss:Type="String">'
+                . htmlspecialchars((string) $record[$field], ENT_XML1 | ENT_QUOTES, 'UTF-8')
+                . '</Data></Cell>';
+        }
+        echo '</Row>';
+    }
+    echo '</Table></Worksheet></Workbook>';
+}
+
 $method = $_SERVER['REQUEST_METHOD'] ?? '';
 if ($method === 'GET') {
+    if (isset($_GET['export'])) {
+        if ($_GET['export'] !== 'excel') {
+            respond(400, ['error' => 'El formato de exportación solicitado no es válido.']);
+        }
+        exportRecords();
+        exit;
+    }
+
     if (!isset($_GET['numero'])) {
         try {
             database()->query('SELECT numero FROM registros LIMIT 0');
@@ -65,7 +152,9 @@ if ($method === 'GET') {
 
     try {
         $statement = database()->prepare(
-            'SELECT numero, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido
+            'SELECT numero, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
+                    madre_primer_nombre, madre_segundo_nombre, madre_primer_apellido, madre_segundo_apellido,
+                    padre_primer_nombre, padre_segundo_nombre, padre_primer_apellido, padre_segundo_apellido
              FROM registros WHERE numero = :numero'
         );
         $statement->execute(['numero' => $number]);
@@ -87,7 +176,7 @@ if ($method === 'POST') {
     }
 
     if (!($data instanceof stdClass)) {
-        respond(400, ['error' => 'Envía un objeto JSON con el número y los cuatro nombres.']);
+        respond(400, ['error' => 'Envía un objeto JSON con el número, los datos de la persona y los de sus padres.']);
     }
 
     $number = $data->numero ?? null;
@@ -95,12 +184,11 @@ if ($method === 'POST') {
         respond(422, ['error' => 'El número debe tener 10 dígitos y comenzar por 006 o 002.']);
     }
 
-    $fields = ['primer_nombre', 'segundo_nombre', 'primer_apellido', 'segundo_apellido'];
     $record = ['numero' => $number];
-    foreach ($fields as $field) {
+    foreach (recordFields() as $field) {
         $value = $data->{$field} ?? null;
         if (!is_string($value)) {
-            respond(422, ['error' => 'Completa los dos nombres y los dos apellidos.']);
+            respond(422, ['error' => 'Completa los datos de la persona y los dos nombres y apellidos de cada padre.']);
         }
 
         $value = trim($value);
@@ -113,9 +201,13 @@ if ($method === 'POST') {
     try {
         $statement = database()->prepare(
             'INSERT INTO registros
-                (numero, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido)
+                (numero, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido,
+                 madre_primer_nombre, madre_segundo_nombre, madre_primer_apellido, madre_segundo_apellido,
+                 padre_primer_nombre, padre_segundo_nombre, padre_primer_apellido, padre_segundo_apellido)
              VALUES
-                (:numero, :primer_nombre, :segundo_nombre, :primer_apellido, :segundo_apellido)'
+                (:numero, :primer_nombre, :segundo_nombre, :primer_apellido, :segundo_apellido,
+                 :madre_primer_nombre, :madre_segundo_nombre, :madre_primer_apellido, :madre_segundo_apellido,
+                 :padre_primer_nombre, :padre_segundo_nombre, :padre_primer_apellido, :padre_segundo_apellido)'
         );
         $statement->execute($record);
     } catch (PDOException $error) {
