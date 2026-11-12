@@ -7,9 +7,9 @@
 
 ## Preparar MySQL
 
-En MySQL, ejecuta el archivo `database.sql` para crear la base de datos `number_lookup` y la tabla `registros`. La tabla guarda el número, los dos nombres y dos apellidos de la persona y los mismos datos de su madre y su padre; el número debe ser único.
+En MySQL, ejecuta el archivo `database.sql` para crear la base de datos `registro civil` y la tabla `registros`. La tabla guarda el número, los dos nombres y dos apellidos de la persona y los mismos datos de su madre y su padre; el número debe ser único.
 
-Si ya tenías creada la tabla anterior, ejecuta esta migración una sola vez en la base de datos `number_lookup` para agregar los datos obligatorios de ambos padres:
+Si ya tenías creada la tabla anterior en `registro civil`, ejecuta esta migración una sola vez en esa base de datos para agregar los datos obligatorios de ambos padres:
 
 ```sql
 ALTER TABLE registros
@@ -23,7 +23,7 @@ ALTER TABLE registros
   ADD COLUMN padre_segundo_apellido VARCHAR(100) NOT NULL DEFAULT '';
 ```
 
-Configura un usuario de MySQL para la aplicación con permisos únicamente de lectura e inserción sobre `number_lookup.registros`. No uses la cuenta administrativa de MySQL en la aplicación.
+Configura un usuario de MySQL para la aplicación con permisos únicamente de lectura e inserción sobre la tabla `registros` de `registro civil`. No uses la cuenta administrativa de MySQL en la aplicación.
 
 Configura estas variables de entorno para el proceso de PHP:
 
@@ -31,15 +31,15 @@ Configura estas variables de entorno para el proceso de PHP:
 |---|---|
 | `DB_HOST` | `127.0.0.1` |
 | `DB_PORT` | `3306` |
-| `DB_NAME` | `number_lookup` |
+| `DB_NAME` | `registro civil` |
 | `DB_USER` | Usuario de MySQL de la aplicación |
-| `DB_PASSWORD` | Contraseña de ese usuario |
+| `DB_PASSWORD` | Contraseña de ese usuario; vacía si el usuario no tiene contraseña |
 
-`DB_USER` y `DB_PASSWORD` son obligatorias. No guardes la contraseña en archivos del sitio ni en el repositorio. En Windows, puedes definirla en las variables de entorno del usuario y abrir una nueva consola para que PHP la herede.
+`DB_USER` es obligatoria. Si `DB_PASSWORD` no está definida, la API usa una contraseña vacía. No guardes la contraseña en archivos del sitio ni en el repositorio. En Windows, puedes definir las variables de entorno del usuario y abrir una nueva consola para que PHP la herede.
 
 ## Iniciar la aplicación
 
-Abre PowerShell en esta carpeta. Si configuraste el host, puerto, base de datos y usuario solo para esta consola, establece esos valores primero; luego ejecuta:
+Abre PowerShell en esta carpeta. Si configuraste el host, puerto y usuario solo para esta consola, establece esos valores primero; luego ejecuta:
 
 ```powershell
 php -S 127.0.0.1:8000

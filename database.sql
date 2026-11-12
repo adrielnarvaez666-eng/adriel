@@ -1,8 +1,8 @@
-CREATE DATABASE IF NOT EXISTS number_lookup
+CREATE DATABASE IF NOT EXISTS `registro civil`
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
-USE number_lookup;
+USE `registro civil`;
 
 CREATE TABLE IF NOT EXISTS registros (
   numero CHAR(10) NOT NULL PRIMARY KEY,

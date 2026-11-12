@@ -39,13 +39,16 @@ function database(): PDO
 {
     $user = getenv('DB_USER');
     $password = getenv('DB_PASSWORD');
-    if ($user === false || $password === false) {
-        respond(503, ['error' => 'Falta configurar DB_USER y DB_PASSWORD en el servidor.']);
+    if ($user === false || $user === '') {
+        respond(503, ['error' => 'Falta configurar DB_USER en el servidor.']);
+    }
+    if ($password === false) {
+        $password = '';
     }
 
     $host = getenv('DB_HOST') ?: '127.0.0.1';
     $port = getenv('DB_PORT') ?: '3306';
-    $name = getenv('DB_NAME') ?: 'number_lookup';
+    $name = getenv('DB_NAME') ?: 'registro civil';
 
     return new PDO(
         "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4",
