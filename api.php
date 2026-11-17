@@ -37,11 +37,8 @@ function recordFields(): array
 
 function database(): PDO
 {
-    $user = getenv('DB_USER');
+    $user = getenv('DB_USER') ?: 'registro_app';
     $password = getenv('DB_PASSWORD');
-    if ($user === false || $user === '') {
-        respond(503, ['error' => 'Falta configurar DB_USER en el servidor.']);
-    }
     if ($password === false) {
         $password = '';
     }
@@ -62,6 +59,17 @@ function database(): PDO
     );
 }
 
+function databaseErrorMessage(PDOException $error, string $message): string
+{
+    $errorInfo = $error->errorInfo ?? [];
+    if ($error->getCode() === '28000'
+        || (isset($errorInfo[1]) && in_array((int) $errorInfo[1], [1044, 1045, 1142], true))) {
+        return $message . ' Revisa DB_USER, DB_PASSWORD y los permisos de registro_app.';
+    }
+
+    return $message . ' Verifica que MySQL esté iniciado y que exista la base de datos registro civil.';
+}
+
 function exportRecords(): void
 {
     try {
@@ -75,7 +83,7 @@ function exportRecords(): void
         )->fetchAll();
     } catch (PDOException $error) {
         error_log('Database export failed: ' . $error->getMessage());
-        respond(503, ['error' => 'No se pudieron exportar los registros. Verifica la configuración de la base de datos.']);
+        respond(503, ['error' => databaseErrorMessage($error, 'No se pudieron exportar los registros.')]);
     }
 
     $columns = [
@@ -141,7 +149,7 @@ if ($method === 'GET') {
             respond(503, [
                 'status' => 'error',
                 'database' => 'unavailable',
-                'error' => 'No se pudo conectar con la base de datos.',
+                'error' => databaseErrorMessage($error, 'No se pudo conectar con la base de datos.'),
             ]);
         }
 
@@ -164,7 +172,7 @@ if ($method === 'GET') {
         $record = $statement->fetch();
     } catch (PDOException $error) {
         error_log('Database search failed: ' . $error->getMessage());
-        respond(503, ['error' => 'No se pudo consultar la base de datos. Verifica la configuración del servidor.']);
+        respond(503, ['error' => databaseErrorMessage($error, 'No se pudo consultar la base de datos.')]);
     }
 
     respond(200, ['found' => $record !== false, 'record' => $record === false ? null : $record]);
@@ -218,7 +226,7 @@ if ($method === 'POST') {
             respond(409, ['error' => 'Ya existe un registro con ese número.']);
         }
         error_log('Database insert failed: ' . $error->getMessage());
-        respond(503, ['error' => 'No se pudo guardar en la base de datos. Verifica la configuración del servidor.']);
+        respond(503, ['error' => databaseErrorMessage($error, 'No se pudo guardar en la base de datos.')]);
     }
 
     respond(201, ['saved' => true, 'database' => 'saved', 'record' => $record]);

@@ -25,27 +25,65 @@ ALTER TABLE registros
 
 Configura un usuario de MySQL para la aplicación con permisos únicamente de lectura e inserción sobre la tabla `registros` de `registro civil`. No uses la cuenta administrativa de MySQL en la aplicación.
 
-Configura estas variables de entorno para el proceso de PHP:
+El archivo `database.sql` también crea el usuario `registro_app` para conexiones locales, con contraseña vacía y permisos solo de lectura e inserción en `registros`. La API usa estos valores predeterminados:
 
-| Variable | Valor predeterminado / ejemplo |
+| Variable | Valor predeterminado |
 |---|---|
 | `DB_HOST` | `127.0.0.1` |
 | `DB_PORT` | `3306` |
 | `DB_NAME` | `registro civil` |
-| `DB_USER` | Usuario de MySQL de la aplicación |
-| `DB_PASSWORD` | Contraseña de ese usuario; vacía si el usuario no tiene contraseña |
+| `DB_USER` | `registro_app` |
+| `DB_PASSWORD` | Vacía |
 
-`DB_USER` es obligatoria. Si `DB_PASSWORD` no está definida, la API usa una contraseña vacía. No guardes la contraseña en archivos del sitio ni en el repositorio. En Windows, puedes definir las variables de entorno del usuario y abrir una nueva consola para que PHP la herede.
+La contraseña vacía es apropiada únicamente para una instalación local de prueba; no publiques el servidor en Internet con estas credenciales. Si defines `DB_USER` o `DB_PASSWORD` en el entorno, esos valores reemplazan los predeterminados.
 
 ## Iniciar la aplicación
 
-Abre PowerShell en esta carpeta. Si configuraste el host, puerto y usuario solo para esta consola, establece esos valores primero; luego ejecuta:
+En PowerShell, sigue estos pasos:
 
-```powershell
-php -S 127.0.0.1:8000
-```
+1. Ve a la carpeta del proyecto:
 
-Abre `http://127.0.0.1:8000/login.html` en el navegador. No abras el HTML directamente como archivo: las llamadas a PHP requieren el servidor. Inicia sesión con cualquier usuario y contraseña no vacíos; el login actual es una demostración y no verifica credenciales en el servidor.
+   ```powershell
+   Set-Location 'C:\Users\windows 10\Documents\regina'
+   ```
+
+2. Comprueba que MySQL esté instalado y el servicio iniciado:
+
+   ```powershell
+   mysql --version
+   Get-Service *mysql*
+   ```
+
+   Si el servicio está detenido, abre PowerShell como administrador y ejecuta `Start-Service MySQL80` (usa el nombre que muestre `Get-Service` si es diferente).
+
+3. Crea la base de datos, la tabla y el usuario de la aplicación. El comando pedirá la contraseña del administrador de MySQL; si no tiene contraseña, omite `-p`:
+
+   ```powershell
+   cmd.exe /c 'mysql -u root -p < "C:\Users\windows 10\Documents\regina\database.sql"'
+   ```
+
+4. Inicia el servidor PHP desde esta carpeta:
+
+   ```powershell
+   php -S 127.0.0.1:8000
+   ```
+
+   La API utilizará `DB_USER=registro_app`, `DB_PASSWORD` vacía y `DB_NAME=registro civil` automáticamente. Si prefieres establecerlas explícitamente antes de iniciar PHP:
+
+   ```powershell
+   $env:DB_USER = 'registro_app'
+   $env:DB_PASSWORD = ''
+   $env:DB_NAME = 'registro civil'
+   php -S 127.0.0.1:8000
+   ```
+
+5. En una segunda ventana de PowerShell, prueba la conexión:
+
+   ```powershell
+   Invoke-RestMethod http://127.0.0.1:8000/api.php
+   ```
+
+   Debe responder `status: ok` y `database: connected`. Después abre `http://127.0.0.1:8000/login.html` en el navegador. No abras el HTML directamente como archivo: las llamadas a PHP requieren el servidor. Inicia sesión con cualquier usuario y contraseña no vacíos; el login actual es una demostración y no verifica credenciales en el servidor.
 
 En `bienvenida.html` puedes buscar un número exacto de 10 dígitos que comience por `006` o `002`, agregar un registro con los dos nombres y los dos apellidos de la persona y de cada padre, y descargar todos los registros con **Descargar Excel**. El archivo `registros.xls` es compatible con Excel. La API valida los datos y usa consultas preparadas. El número no se puede repetir.
 

@@ -20,3 +20,7 @@ CREATE TABLE IF NOT EXISTS registros (
   padre_segundo_apellido VARCHAR(100) NOT NULL,
   creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE USER IF NOT EXISTS 'registro_app'@'127.0.0.1' IDENTIFIED BY '0000';
+ALTER USER 'registro_app'@'127.0.0.1' IDENTIFIED BY '0000';
+GRANT SELECT, INSERT ON `registro civil`.`registros` TO 'registro_app'@'127.0.0.1';
