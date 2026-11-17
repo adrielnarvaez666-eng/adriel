@@ -6,6 +6,6 @@ $env:DB_HOST 127.0.0.1
 
 en el power Shell 
  
-y instalar el MySQl workbenchk 
+y instalar el MySQl workbenchk iniciar la base de datos que descargo en la carpeta de los archivos y poner la contraseña 0000 
  # adriel
 proyecto.py 
