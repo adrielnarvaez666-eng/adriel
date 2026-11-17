@@ -2,5 +2,9 @@
 $env:DB_USER = 'registro_app'
 $env:DB_PASSWORD = ''
 $env:DB_NAME = 'registro civil'
-php -S 127.0.0.1:8000  # adriel
+$env:DB_HOST 127.0.0.1
+
+en el power Shell 
+
+ # adriel
 proyecto.py 
